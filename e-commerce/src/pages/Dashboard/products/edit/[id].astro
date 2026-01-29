@@ -1,0 +1,136 @@
+---
+export const prerender = false;
+import Dashboard from "../../../../layouts/Dashboard.astro";
+
+const { id } = Astro.params;
+
+// Ambil data product by ID
+const res = await fetch(`http://localhost:3000/product/${id}`);
+const product = await res.json();
+
+if (!product) return Astro.redirect("/Dashboard/products");
+---
+
+<Dashboard>
+  <div class="edit-page">
+    <h1>Edit Product: {id}</h1>
+
+    <form id="editForm" data-id={id}>
+      <div>
+        <label>Product ID</label>
+        <input type="text" id="newId" value={product.PRODUCT_ID} required />
+      </div>
+
+      <div>
+        <label>Nama Product</label>
+        <input
+          type="text"
+          id="product_name"
+          value={product.PRODUCT_NAME}
+          required
+        />
+      </div>
+
+      <div>
+        <label>Harga</label>
+        <input type="number" id="price" value={product.PRICE} required />
+      </div>
+
+      <div>
+        <label>Category ID</label>
+        <input
+          type="text"
+          id="category_id"
+          value={product.CATEGORY_ID}
+          required
+        />
+      </div>
+
+      <div>
+        <label>Stock</label>
+        <input type="number" id="stock" value={product.STOCK} required />
+      </div>
+
+      <button type="submit">Update Product</button>
+    </form>
+  </div>
+</Dashboard>
+
+<script>
+  // @ts-nocheck
+  const form = document.getElementById("editForm");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const oldId = form.dataset.id;
+
+    const data = {
+      newId: document.getElementById("newId").value,
+      PRODUCT_NAME: document.getElementById("product_name").value,
+      PRICE: Number(document.getElementById("price").value),
+      CATEGORY_ID: document.getElementById("category_id").value,
+      STOCK: Number(document.getElementById("stock").value),
+    };
+
+    const res = await fetch(`http://localhost:3000/product/${oldId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (res.ok) {
+      alert("Product berhasil diupdate");
+      location.href = "/Dashboard/products";
+    } else {
+      alert("Gagal mengupdate product");
+    }
+  });
+</script>
+
+<style>
+  .edit-page h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .edit-page form {
+    max-width: 450px;
+    margin: auto;
+    padding: 24px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .edit-page form div {
+    margin-bottom: 16px;
+  }
+
+  .edit-page label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .edit-page input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+
+  .edit-page button {
+    width: 100%;
+    padding: 10px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .edit-page button:hover {
+    background: #0081cc;
+  }
+</style>

@@ -1,0 +1,198 @@
+---
+import Dashboard from "../../../layouts/Dashboard.astro";
+
+interface Customer {
+  CUST_ID: string;
+  CUST_NAME: string;
+  ADDRESS: string;
+  DATE_OF_BIRTH: string;
+  CONTACT_NUMBER: string;
+  EMAIL: string;
+}
+
+const res = await fetch("http://localhost:3000/customers");
+const customers: Customer[] = await res.json();
+---
+
+<Dashboard>
+  <div class="header-container">
+    <h1 class="title">List Data Customers</h1>
+
+    <div class="actions">
+      <button class="btn edit" id="editBtn" disabled>Edit</button>
+      <button class="btn delete" id="deleteBtn" disabled>Delete</button>
+      <a href="/Dashboard/customers/add">
+        <button class="btn add">+ Add</button>
+      </a>
+    </div>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>ID</th>
+        <th>Nama</th>
+        <th>Alamat</th>
+        <th>Tgl Lahir</th>
+        <th>Kontak</th>
+        <th>Email</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        customers.map((c, i) => (
+          <tr data-id={c.CUST_ID} onclick="selectRow(this)" class="row-item">
+            <td>{i + 1}</td>
+            <td>{c.CUST_ID}</td>
+            <td>{c.CUST_NAME}</td>
+            <td>{c.ADDRESS}</td>
+            <td>
+              {c.DATE_OF_BIRTH
+                ? c.DATE_OF_BIRTH.toString().substring(0, 10)
+                : "-"}
+            </td>
+            <td>{c.CONTACT_NUMBER}</td>
+            <td>{c.EMAIL}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</Dashboard>
+
+<script is:inline>
+  let selectedId = null;
+  const editBtn = document.getElementById("editBtn");
+  const deleteBtn = document.getElementById("deleteBtn");
+
+  function selectRow(row) {
+    // Bersihkan seleksi lama
+    document
+      .querySelectorAll("tbody tr")
+      .forEach((r) => r.classList.remove("selected-row"));
+
+    // Aktifkan baris yang diklik
+    row.classList.add("selected-row");
+    selectedId = row.getAttribute("data-id");
+
+    // Aktifkan tombol aksi di kanan atas
+    editBtn.disabled = false;
+    deleteBtn.disabled = false;
+  }
+
+  editBtn.onclick = () => {
+    if (selectedId)
+      window.location.href = `/Dashboard/customers/edit/${selectedId}`;
+  };
+
+  deleteBtn.onclick = async () => {
+    if (!selectedId) return;
+    if (!confirm("Yakin ingin menghapus customer ini?")) return;
+
+    try {
+      const res = await fetch(`http://localhost:3000/customers/${selectedId}`, {
+        method: "DELETE",
+      });
+      const result = await res.json();
+
+      if (res.ok) {
+        alert(result.message);
+        location.reload();
+      } else {
+        alert("Gagal: " + (result.message || "Terjadi kesalahan"));
+      }
+    } catch (error) {
+      alert("Koneksi server terputus");
+    }
+  };
+</script>
+
+<style>
+  /* Container utama untuk layout judul dan tombol */
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+  }
+
+  .title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+  }
+
+  /* Grup tombol aksi sejajar horisontal */
+  .actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .btn:disabled {
+    background-color: #e5e7eb !important;
+    color: #9ca3af !important;
+    cursor: not-allowed;
+  }
+
+  /* Warna tombol konsisten dengan bagian Product */
+  .add {
+    background-color: #22c55e;
+    color: white;
+  }
+  .edit {
+    background-color: #3b82f6;
+    color: white;
+  }
+  .delete {
+    background-color: #ef4444;
+    color: white;
+  }
+
+  /* Style Tabel */
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .table th,
+  .table td {
+    padding: 12px 15px;
+    border: 1px solid #f0f0f0;
+    text-align: center;
+  }
+
+  .table th {
+    background-color: #f8f9fa;
+    color: #666;
+  }
+
+  .row-item {
+    cursor: pointer;
+  }
+
+  .row-item:hover {
+    background-color: #f9fafb;
+  }
+
+  /* Highlight biru pada baris yang dipilih */
+  .selected-row {
+    background-color: #f0f7ff !important;
+    outline: 2px solid #3b82f6;
+  }
+</style>

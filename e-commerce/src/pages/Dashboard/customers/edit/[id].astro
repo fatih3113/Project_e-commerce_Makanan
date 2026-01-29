@@ -1,0 +1,160 @@
+---
+import Dashboard from "../../../../layouts/Dashboard.astro";
+const { id } = Astro.params;
+
+// Ambil data customer yang lama untuk mengisi form secara otomatis
+const res = await fetch(`http://localhost:3000/customers/${id}`);
+const customer = await res.json();
+
+// Jika data tidak ditemukan
+if (!customer) {
+  return Astro.redirect("/Dashboard/customers");
+}
+---
+
+<Dashboard>
+  <div class="edit-page">
+    <h1>Edit Customer: {id}</h1>
+    <form id="editForm">
+      <div>
+        <label>Nama Customer</label>
+        <input type="text" id="cust_name" value={customer.CUST_NAME} required />
+      </div>
+
+      <div>
+        <label>Jenis Kelamin</label>
+        <select id="gender_id" required>
+          <option value="L" selected={customer.GENDER_ID === "L"}
+            >Laki-Laki</option
+          >
+          <option value="P" selected={customer.GENDER_ID === "P"}
+            >Perempuan</option
+          >
+        </select>
+      </div>
+
+      <div>
+        <label>Alamat</label>
+        <input type="text" id="address" value={customer.ADDRESS} required />
+      </div>
+
+      <div>
+        <label>Tempat Lahir</label>
+        <input
+          type="text"
+          id="place_of_birth"
+          value={customer.PLACE_OF_BIRTH}
+          required
+        />
+      </div>
+
+      <div>
+        <label>Tanggal Lahir</label>
+        <input
+          type="date"
+          id="date_of_birth"
+          value={customer.DATE_OF_BIRTH
+            ? customer.DATE_OF_BIRTH.substring(0, 10)
+            : ""}
+          required
+        />
+      </div>
+
+      <div>
+        <label>No. Kontak</label>
+        <input
+          type="text"
+          id="contact_number"
+          value={customer.CONTACT_NUMBER}
+          required
+        />
+      </div>
+
+      <div>
+        <label>Email</label>
+        <input type="email" id="email" value={customer.EMAIL} required />
+      </div>
+
+      <button type="submit" class="btn-update">Update Data</button>
+      <a href="/Dashboard/customers" class="btn-cancel">Batal</a>
+    </form>
+  </div>
+</Dashboard>
+
+<script define:vars={{ id }}>
+  const form = document.getElementById("editForm");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const data = {
+      CUST_NAME: document.getElementById("cust_name").value,
+      GENDER_ID: document.getElementById("gender_id").value,
+      ADDRESS: document.getElementById("address").value,
+      PLACE_OF_BIRTH: document.getElementById("place_of_birth").value,
+      DATE_OF_BIRTH: document.getElementById("date_of_birth").value,
+      CONTACT_NUMBER: document.getElementById("contact_number").value,
+      EMAIL: document.getElementById("email").value,
+    };
+
+    const res = await fetch(`http://localhost:3000/customers/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      alert("Customer berhasil diupdate");
+      window.location.href = "/Dashboard/customers";
+    } else {
+      alert("Gagal mengupdate: " + result.message);
+    }
+  });
+</script>
+
+<style>
+  .edit-page {
+    max-width: 500px;
+    margin: auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  form div {
+    margin-bottom: 15px;
+  }
+  label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 14px;
+  }
+  input,
+  select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .btn-update {
+    width: 100%;
+    padding: 12px;
+    background: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-cancel {
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+    color: #666;
+    text-decoration: none;
+    font-size: 14px;
+  }
+</style>

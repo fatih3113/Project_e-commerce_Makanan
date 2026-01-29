@@ -1,0 +1,279 @@
+---
+import FrontEnd from "../layouts/FrontEnd.astro";
+
+// 1. MENGAMBIL PARAMETER DARI URL
+const { searchParams } = Astro.url;
+const searchQuery = searchParams.get("search")?.toLowerCase() || "";
+const categoryFilter = searchParams.get("category");
+
+let products = [];
+let errorMessage = "";
+
+try {
+  // 2. MENGAMBIL DATA DARI DATABASE (API)
+  const res = await fetch("http://localhost:3000/product");
+  const data = await res.json();
+  let allProducts = Array.isArray(data) ? data : [];
+
+  // 3. LOGIKA FILTER GANDA (KATEGORI & PENCARIAN)
+  products = allProducts.filter((p: any) => {
+    // Filter Kategori (jika ada)
+    const matchCategory = categoryFilter
+      ? p.CATEGORY_ID === categoryFilter
+      : true;
+
+    // Filter Pencarian (jika ada)
+    const matchSearch = searchQuery
+      ? p.PRODUCT_NAME.toLowerCase().includes(searchQuery)
+      : true;
+
+    return matchCategory && matchSearch;
+  });
+} catch (error) {
+  console.error("Fetch error:", error);
+  errorMessage = "Gagal memuat data dari database. Pastikan API menyala.";
+}
+
+// Map nama kategori untuk judul halaman
+const categoryNames: Record<string, string> = {
+  MB: "Makanan Berat",
+  MR: "Makanan Ringan",
+  MU: "Makanan Beku",
+};
+
+// Menentukan Judul Halaman secara dinamis
+let currentTitle = "Semua Produk";
+if (categoryFilter) {
+  currentTitle = categoryNames[categoryFilter] || "Kategori Produk";
+} else if (searchQuery) {
+  currentTitle = `Hasil Pencarian: "${searchQuery}"`;
+}
+---
+
+<FrontEnd>
+  <div class="product-page">
+    <div class="page-header">
+      <h2 class="page-title">{currentTitle}</h2>
+      {
+        (categoryFilter || searchQuery) && (
+          <a href="/Product" class="btn-back">
+            Lihat Semua Produk
+          </a>
+        )
+      }
+    </div>
+
+    {errorMessage && <div class="error-box">{errorMessage}</div>}
+
+    <div class="product-grid">
+      {
+        products.length > 0 ? (
+          products.map((p: any) => (
+            <div class="product-card-wrapper">
+              <a href={`/${p.PRODUCT_ID}`} class="product-link">
+                <div class="product-card">
+                  <div class="product-image">
+                    <img
+                      src={p.image_url || "/placeholder.jpg"}
+                      alt={p.PRODUCT_NAME}
+                    />
+                  </div>
+                  <div class="product-info">
+                    <h3 class="product-name">{p.PRODUCT_NAME}</h3>
+                    <div class="product-footer">
+                      <p class="product-price">
+                        Rp {Number(p.PRICE).toLocaleString("id-ID")}
+                      </p>
+                      <button class="btn-tambah">Detail</button>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          ))
+        ) : (
+          <div class="no-data">
+            <p>Maaf, produk yang Anda cari tidak ditemukan.</p>
+            <a href="/Product" class="btn-reset">
+              Kembali ke Katalog
+            </a>
+          </div>
+        )
+      }
+    </div>
+  </div>
+</FrontEnd>
+
+<style>
+  /* Container Utama */
+  .product-page {
+    padding: 40px 10%;
+    background: #ffffff;
+    min-height: 100vh;
+    font-family: "Inter", sans-serif;
+  }
+
+  /* Header Section */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 15px;
+  }
+
+  .page-title {
+    color: #5a9c6d;
+    font-size: 26px;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .btn-back {
+    color: #666;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: 0.3s;
+  }
+
+  .btn-back:hover {
+    color: #5a9c6d;
+  }
+
+  /* Grid System */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 30px;
+  }
+
+  /* Card Design */
+  .product-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .product-card {
+    background: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+    border: 1px solid #f0f0f0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .product-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  }
+
+  .product-image {
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+  }
+
+  .product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+
+  .product-card:hover .product-image img {
+    transform: scale(1.1);
+  }
+
+  /* Info Section */
+  .product-info {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .product-name {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #2d3436;
+    line-height: 1.4;
+    height: 50px;
+    overflow: hidden;
+  }
+
+  .product-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+
+  .product-price {
+    color: #5a9c6d;
+    font-weight: 800;
+    font-size: 18px;
+    margin: 0;
+  }
+
+  .btn-tambah {
+    background: #5a9c6d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: 0.3s;
+  }
+
+  .btn-tambah:hover {
+    background: #4a8359;
+  }
+
+  /* Status Messages */
+  .no-data {
+    text-align: center;
+    grid-column: 1 / -1;
+    padding: 80px 0;
+  }
+
+  .btn-reset {
+    display: inline-block;
+    margin-top: 20px;
+    background: #f0f0f0;
+    padding: 10px 25px;
+    border-radius: 25px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .error-box {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  /* Responsive Mobile */
+  @media (max-width: 600px) {
+    .product-grid {
+      grid-template-columns: 1fr;
+    }
+    .product-page {
+      padding: 20px 5%;
+    }
+  }
+</style>

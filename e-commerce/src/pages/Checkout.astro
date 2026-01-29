@@ -1,0 +1,219 @@
+---
+import FrontEnd from "../layouts/FrontEnd.astro";
+---
+
+<FrontEnd>
+  <div class="shipping-container">
+    <h1 class="page-title">Informasi Pesanan</h1>
+
+    <div class="order-table">
+      <div class="table-header">
+        <div class="col-id">Id Produk</div>
+        <div class="col-name">Nama Produk</div>
+        <div class="col-quantity">Jumlah</div>
+        <div class="col-price">Subtotal</div>
+      </div>
+
+      <div id="cartItems"></div>
+
+      <div class="table-footer">
+        <div class="total-label">Total Pembayaran :</div>
+        <div class="total-price" id="totalPrice">Rp 0</div>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <a href="/Product" class="btn-back">Tambah Produk</a>
+      <button class="btn-order" id="btnOrder"
+        >Konfirmasi & Pesan Sekarang</button
+      >
+    </div>
+  </div>
+</FrontEnd>
+
+<script>
+  interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+  }
+
+  function renderCart() {
+    const cart: CartItem[] = JSON.parse(localStorage.getItem("cart") || "[]");
+    const container = document.getElementById("cartItems");
+    const totalElement = document.getElementById("totalPrice");
+
+    if (!container || !totalElement) return;
+    container.innerHTML = "";
+
+    if (cart.length === 0) {
+      container.innerHTML = `<p style="padding:20px; text-align:center;">Keranjang Anda kosong.</p>`;
+      return;
+    }
+
+    let total = 0;
+    cart.forEach((item: CartItem, index: number) => {
+      const subtotal = item.price * item.quantity;
+      total += subtotal;
+      const row = document.createElement("div");
+      row.className = "table-row";
+      row.innerHTML = `
+        <div class="col-id">#${item.id}</div>
+        <div class="col-name">${item.name}</div>
+        <div class="col-quantity">
+          <div class="quantity-control">
+            <button class="qty-btn" onclick="updateQty(${index}, -1)">-</button>
+            <input type="text" value="${item.quantity}" class="qty-input" readonly />
+            <button class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+          </div>
+        </div>
+        <div class="col-price">Rp ${subtotal.toLocaleString("id-ID")}</div>
+      `;
+      container.appendChild(row);
+    });
+    totalElement.textContent = "Rp " + total.toLocaleString("id-ID");
+  }
+
+  // Global function untuk tombol qty
+  (window as any).updateQty = (index: number, change: number) => {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    cart[index].quantity += change;
+    if (cart[index].quantity <= 0) cart.splice(index, 1);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    renderCart();
+  };
+
+  document.getElementById("btnOrder")?.addEventListener("click", async () => {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+
+    if (!user || !user.CUSTOMER_ID) {
+      alert("Anda harus login untuk melakukan pemesanan!");
+      window.location.href = "/Login";
+      return;
+    }
+
+    if (cart.length === 0) {
+      alert("Keranjang Anda masih kosong!");
+      return;
+    }
+
+    const orderData = {
+      customer_id: user.CUSTOMER_ID, // Sesuai CUST_ID
+      total_amount: cart.reduce(
+        (acc: number, cur: any) => acc + cur.price * cur.quantity,
+        0,
+      ),
+      items: cart.map((item: any) => ({
+        // Pastikan ID bersih dari karakter '#'
+        product_id: item.id.toString().replace("#", ""),
+        quantity: item.quantity,
+        price: item.price,
+      })),
+    };
+
+    try {
+      // Gunakan URL endpoint gabungan Anda
+      const res = await fetch("http://localhost:3000/api/submit-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
+
+      if (res.ok) {
+        alert("Pesanan Berhasil! Terima kasih sudah berbelanja.");
+        localStorage.removeItem("cart"); // Hapus keranjang setelah beli
+        window.location.href = "/";
+      } else {
+        const errorMsg = await res.text();
+        alert("Gagal memesan: " + errorMsg);
+      }
+    } catch (e) {
+      alert("Gagal terhubung ke server.");
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", renderCart);
+</script>
+
+<style>
+  .shipping-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+  .page-title {
+    color: #84cc16;
+    margin-bottom: 30px;
+  }
+  .order-table {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  .table-header,
+  :global(.table-row) {
+    display: grid;
+    grid-template-columns: 120px 1fr 200px 150px;
+    padding: 1.5rem;
+    border-bottom: 1px solid #eee;
+  }
+  .table-header {
+    font-weight: bold;
+    background: #f9fafb;
+  }
+  :global(.col-price) {
+    color: #5a9c6d;
+    font-weight: 600;
+  }
+  :global(.quantity-control) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  :global(.qty-btn) {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    background: #eee;
+    border-radius: 4px;
+  }
+  :global(.qty-input) {
+    width: 40px;
+    text-align: center;
+    border: none;
+  }
+  .table-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 2rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  .total-price {
+    color: #84cc16;
+  }
+  .action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+  }
+  .btn-back {
+    text-decoration: none;
+    padding: 12px 25px;
+    background: #ff8533;
+    color: white;
+    border-radius: 8px;
+  }
+  .btn-order {
+    padding: 12px 25px;
+    background: #84cc16;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+</style>

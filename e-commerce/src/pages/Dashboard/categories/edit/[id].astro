@@ -1,0 +1,160 @@
+---
+import Dashboard from "../../../../layouts/Dashboard.astro";
+const { id } = Astro.params;
+
+const res = await fetch(`http://localhost:3000/product_categories/${id}`);
+const category = await res.json();
+---
+
+<Dashboard>
+  <div class="edit-page">
+    <div class="card">
+      <div class="card-header">
+        <h2>Edit Product Category</h2>
+      </div>
+
+      <form id="editForm">
+        <div class="form-group">
+          <label for="newId">Category ID</label>
+          <input type="text" id="newId" value={id} required />
+        </div>
+
+        <div class="form-group">
+          <label for="nama">Category Name</label>
+          <input type="text" id="nama" value={category.CATEGORY} required />
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-update">Update Category</button>
+          <a href="/Dashboard/categories" class="btn-cancel">Cancel & Back</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</Dashboard>
+
+<script define:vars={{ id }}>
+  const form = document.getElementById("editForm");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const newId = document.getElementById("newId").value;
+    const CATEGORY = document.getElementById("nama").value;
+
+    const res = await fetch(`http://localhost:3000/product_categories/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newId, CATEGORY }), // Kirim ID baru ke backend
+    });
+
+    if (res.ok) {
+      alert("Update berhasil!");
+      window.location.href = "/Dashboard/categories";
+    } else {
+      const err = await res.json();
+      alert("Gagal: " + err.message);
+    }
+  });
+</script>
+
+<style>
+  .edit-page {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+    min-height: 80vh;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 450px;
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  }
+
+  .card-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .card-header h2 {
+    margin: 0;
+    font-size: 22px;
+    color: #1a1a1a;
+  }
+
+  .card-header p {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: #666;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    font-size: 15px;
+    background-color: #f9f9f9;
+    transition: all 0.2s ease;
+  }
+
+  input:focus {
+    background-color: #fff;
+    border-color: #16a34a;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.1);
+  }
+
+  .button-group {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-update {
+    width: 100%;
+    padding: 14px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .btn-update:hover {
+    background: #15803d;
+  }
+
+  .btn-cancel {
+    text-align: center;
+    text-decoration: none;
+    color: #666;
+    font-size: 14px;
+    padding: 10px;
+    transition: color 0.2s;
+  }
+
+  .btn-cancel:hover {
+    color: #cc0000;
+  }
+</style>

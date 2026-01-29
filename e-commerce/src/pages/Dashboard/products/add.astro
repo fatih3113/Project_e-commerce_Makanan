@@ -1,0 +1,151 @@
+---
+import Dashboard from "../../../layouts/Dashboard.astro";
+---
+
+<Dashboard>
+  <div class="add-page">
+    <div class="card">
+      <h2>Tambah Product Baru</h2>
+      <form id="addForm">
+        <div class="form-group">
+          <label>ID Produk</label>
+          <input
+            type="text"
+            id="product_id"
+            placeholder="Contoh: 2150"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Nama Produk</label>
+          <input
+            type="text"
+            id="product_name"
+            placeholder="Nama Product"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Harga</label>
+          <input type="number" id="price" placeholder="Harga" required />
+        </div>
+
+        <div class="form-group">
+          <label>Category ID</label>
+          <input type="text" id="category_id" placeholder="MN/MK/BK" required />
+        </div>
+
+        <div class="form-group">
+          <label>Stock</label>
+          <input type="number" id="stock" placeholder="Jumlah Stock" required />
+        </div>
+
+        <div class="form-group">
+          <label>Link URL Gambar</label>
+          <input
+            type="text"
+            id="image_url"
+            placeholder="Masukkan link gambar (Pinterest/Google)"
+            required
+          />
+        </div>
+
+        <button type="submit" class="btn-save">Simpan Product</button>
+      </form>
+    </div>
+  </div>
+</Dashboard>
+
+<script is:inline>
+  const form = document.getElementById("addForm");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Mengambil nilai dari input form termasuk image_url
+    const data = {
+      PRODUCT_ID: document.getElementById("product_id").value,
+      PRODUCT_NAME: document.getElementById("product_name").value,
+      PRICE: Number(document.getElementById("price").value),
+      CATEGORY_ID: document.getElementById("category_id").value,
+      STOCK: Number(document.getElementById("stock").value),
+      image_url: document.getElementById("image_url").value, // Kirim ke Backend
+    };
+
+    try {
+      const res = await fetch("http://localhost:3000/product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        alert("Produk Berhasil Ditambah!");
+        window.location.href = "/Dashboard/products";
+      } else {
+        alert("Gagal: " + result.message);
+      }
+    } catch (err) {
+      alert("Error: Koneksi ke server terputus");
+    }
+  });
+</script>
+
+<style>
+  /* Style tetap sama seperti kode Anda sebelumnya */
+  .add-page {
+    display: flex;
+    justify-content: center;
+    padding: 40px;
+  }
+  .card {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 20px;
+    color: #333;
+  }
+  .form-group {
+    margin-bottom: 15px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #666;
+  }
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .btn-save {
+    width: 100%;
+    padding: 14px;
+    background: #22c55e;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: 0.3s;
+  }
+  .btn-save:hover {
+    background: #16a34a;
+  }
+</style>

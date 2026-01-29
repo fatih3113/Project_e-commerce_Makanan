@@ -1,0 +1,128 @@
+---
+import FrontEnd from "../layouts/FrontEnd.astro";
+---
+
+<FrontEnd>
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <h1>Login</h1>
+        <p>Masuk untuk melanjutkan pemesanan di BregalFood</p>
+      </div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="nama@email.com"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+
+        <button type="submit" class="btn-login">Masuk</button>
+      </form>
+    </div>
+  </div>
+</FrontEnd>
+
+<script>
+  const form = document.getElementById("loginForm") as HTMLFormElement;
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+
+    // Gunakan .toString() dan .trim() untuk memastikan data bersih
+    const email = formData.get("email")?.toString().trim();
+    const password = formData.get("password")?.toString().trim();
+
+    try {
+      const response = await fetch("http://localhost:3000/api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // PENTING: Sesuaikan dengan nama kolom di Database Anda
+        // Database menggunakan CUST_ID dan CUST_NAME
+        const userToSave = {
+          CUSTOMER_ID: data.user.CUST_ID, // Mapping agar script Checkout Anda tetap jalan
+          name: data.user.CUST_NAME, // Ambil dari CUST_NAME
+          email: data.user.EMAIL,
+        };
+
+        localStorage.setItem("user", JSON.stringify(userToSave));
+
+        alert("Selamat Datang, " + userToSave.name);
+        window.location.href = "/Product";
+      } else {
+        // Jika masih gagal, alert ini akan muncul
+        alert("Email atau password salah!");
+      }
+    } catch (error) {
+      alert("Gagal terhubung ke server backend.");
+    }
+  });
+</script>
+
+<style>
+  .login-container {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+  }
+  .login-box {
+    width: 100%;
+    max-width: 400px;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  .login-header h1 {
+    color: #75b06f;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  .form-group {
+    margin-bottom: 1.2rem;
+  }
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+  input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+  .btn-login {
+    width: 100%;
+    padding: 0.8rem;
+    background: #75b06f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .btn-login:hover {
+    background: #5a9c6d;
+  }
+</style>

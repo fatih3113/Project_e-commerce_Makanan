@@ -1,0 +1,224 @@
+---
+import FrontEnd from "../layouts/FrontEnd.astro";
+
+// 1. Mengaktifkan SSR agar data selalu diambil dari database saat halaman dibuka
+export const prerender = false;
+
+const { id } = Astro.params;
+let product = null;
+
+// 2. Mengambil data langsung dari API berdasarkan ID
+try {
+  const res = await fetch(`http://localhost:3000/product`);
+  const data = await res.json();
+  // Cari produk yang ID-nya cocok dengan parameter URL
+  product = data.find((p: any) => String(p.PRODUCT_ID) === String(id));
+} catch (e) {
+  console.error("Gagal mengambil data produk:", e);
+}
+
+// 3. Logika Nama Kategori
+const categoryMap: any = { 
+  MB: "Makanan Berat", 
+  MR: "Makanan Ringan", 
+  BK: "Makanan Beku" 
+};
+const categoryName = product ? (categoryMap[product.CATEGORY_ID] || "Produk") : "";
+---
+
+<FrontEnd>
+  {product ? (
+    <main class="detail-container">
+      <div class="breadcrumb">Detail Product</div>
+
+      <div class="product-wrapper">
+        <div class="image-section">
+          <img src={product.image_url} alt={product.PRODUCT_NAME} />
+        </div>
+
+        <div class="info-section">
+          <h1 class="product-title">{product.PRODUCT_NAME}</h1>
+          <span class="category-tag">{categoryName}</span>
+          
+          <div class="price-tag">
+            Rp {Number(product.PRICE).toLocaleString("id-ID")}
+          </div>
+          
+          <div class="stock-info">Stok: {product.STOCK}</div>
+
+          <div class="action-section">
+            <button class="btn-large-cart" id="addBtn" 
+              data-id={product.PRODUCT_ID} 
+              data-name={product.PRODUCT_NAME} 
+              data-price={product.PRICE} 
+              data-image={product.image_url}>
+              Tambah ke Keranjang
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="description-section">
+        <h3>Deskripsi</h3>
+        <p>Nikmati sajian lezat {product.PRODUCT_NAME} dari BregalFood. Dibuat dengan bahan-bahan pilihan berkualitas untuk menjamin rasa yang autentik dan nikmat.</p>
+      </div>
+    </main>
+  ) : (
+    <div class="not-found">Produk tidak ditemukan</div>
+  )}
+
+  <div id="toast" class="toast">Berhasil ditambah ke keranjang! 🛒</div>
+</FrontEnd>
+
+<style>
+  .detail-container { 
+    max-width: 1000px; 
+    margin: 60px auto; 
+    padding: 0 20px; 
+    font-family: 'Inter', sans-serif; 
+  }
+  
+  .breadcrumb { 
+    color: #7db37d; 
+    font-size: 20px; 
+    font-weight: 500; 
+    margin-bottom: 30px; 
+  }
+  
+  .product-wrapper { 
+    display: grid; 
+    grid-template-columns: 1.1fr 0.9fr; 
+    gap: 60px; 
+    align-items: start; 
+    margin-bottom: 50px; 
+  }
+  
+  .image-section img { 
+    width: 100%; 
+    border-radius: 8px; 
+    border: 2px solid #3498db; /* Warna border biru tipis sesuai gambar */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+  }
+  
+  .product-title { 
+    font-size: 36px; 
+    font-weight: 800; 
+    color: #000; 
+    margin-bottom: 15px; 
+  }
+  
+  .category-tag { 
+    background: #7db37d; 
+    color: white; 
+    padding: 6px 15px; 
+    border-radius: 6px; 
+    font-size: 13px; 
+    display: inline-block; 
+    margin-bottom: 25px; 
+  }
+  
+  .price-tag { 
+    font-size: 42px; 
+    color: #7db37d; 
+    font-weight: 600; 
+    margin-bottom: 40px; 
+  }
+  
+  .stock-info { 
+    font-size: 18px; 
+    font-weight: bold; 
+    color: #000; 
+    margin-bottom: 80px; 
+  }
+
+  .btn-large-cart { 
+    width: 320px; /* Ukuran lebar sesuai tombol di gambar */
+    background: #7db37d; 
+    color: white; 
+    border: none; 
+    padding: 18px; 
+    border-radius: 10px; 
+    font-size: 18px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: 0.3s;
+  }
+  
+  .btn-large-cart:hover { 
+    background: #6a9c6a; 
+    transform: translateY(-2px); 
+  }
+
+  .description-section { 
+    margin-top: 50px;
+  }
+  
+  .description-section h3 { 
+    font-size: 20px; 
+    font-weight: bold; 
+    margin-bottom: 15px; 
+  }
+  
+  .description-section p { 
+    color: #333; 
+    line-height: 1.6; 
+  }
+
+  .toast { 
+    position: fixed; 
+    bottom: -100px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    background: #7db37d; 
+    color: white; 
+    padding: 15px 30px; 
+    border-radius: 30px; 
+    transition: 0.5s; 
+    z-index: 9999; 
+  }
+  
+  .toast.show { bottom: 30px; }
+
+  .not-found { text-align: center; padding: 100px; font-size: 24px; color: #666; }
+
+  @media (max-width: 768px) {
+    .product-wrapper { grid-template-columns: 1fr; gap: 30px; }
+    .btn-large-cart { width: 100%; }
+  }
+</style>
+
+<script is:inline>
+  // Menangani klik tombol tambah ke keranjang
+  function initCart() {
+    const addBtn = document.getElementById("addBtn");
+    if (!addBtn) return;
+
+    addBtn.addEventListener("click", function () {
+      const item = {
+        id: this.dataset.id,
+        name: this.dataset.name,
+        price: this.dataset.price,
+        image: this.dataset.image,
+        quantity: 1,
+      };
+
+      let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      const exist = cart.findIndex((i) => i.id === item.id);
+      
+      if (exist > -1) {
+        cart[exist].quantity += 1;
+      } else {
+        cart.push(item);
+      }
+
+      localStorage.setItem("cart", JSON.stringify(cart));
+
+      const toast = document.getElementById("toast");
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    });
+  }
+
+  // Jalankan saat DOM siap
+  document.addEventListener("DOMContentLoaded", initCart);
+</script>

@@ -1,0 +1,254 @@
+---
+import Dashboard from "../../../../layouts/Dashboard.astro";
+
+const { id } = Astro.params;
+
+// Ambil data order, pelanggan, dan produk
+const orderData = await fetch(`http://localhost:3000/orders/${id}`).then(
+  (res) => res.json()
+);
+const customers = await fetch("http://localhost:3000/customers").then((res) =>
+  res.json()
+);
+const products = await fetch("http://localhost:3000/product").then((res) =>
+  res.json()
+);
+---
+
+<Dashboard>
+  <div class="container">
+    <h2>Edit Transaksi: {id}</h2>
+    <div class="card">
+      <div class="form-grid">
+        <div class="input-group">
+          <label>Customer</label>
+          <select id="custId">
+            {
+              customers.map((c: any) => (
+                <option
+                  value={c.CUST_ID}
+                  selected={c.CUST_ID === orderData.CUST_ID}
+                >
+                  {c.CUST_NAME}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Nomor Resi</label>
+          <input type="text" id="receipt" value={orderData.RECEIPT_NUMBER} />
+        </div>
+      </div>
+
+      <div class="product-selection">
+        <select id="prodId">
+          <option value="">-- Tambah Produk Baru --</option>
+          {
+            products.map((p: any) => (
+              <option value={p.PRODUCT_ID} data-price={p.PRICE}>
+                {p.PRODUCT_NAME}
+              </option>
+            ))
+          }
+        </select>
+        <input type="number" id="qty" value="1" min="1" />
+        <button id="addItem" class="btn-blue">+ Item</button>
+      </div>
+
+      <table class="table-items">
+        <thead>
+          <tr>
+            <th>Produk</th>
+            <th>Qty</th>
+            <th>Harga</th>
+            <th>Subtotal</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="itemTableBody"></tbody>
+      </table>
+
+      <div class="footer-form">
+        <div class="total-display" id="totalText">Total: Rp 0</div>
+        <button id="updateTransaction" class="btn-save">UPDATE TRANSAKSI</button
+        >
+      </div>
+    </div>
+  </div>
+</Dashboard>
+
+<script is:inline define:vars={{ orderData }}>
+  // Ambil item lama dari database dan hitung subtotal secara manual
+  let cart = orderData.items.map((item) => ({
+    PRODUCT_ID: item.PRODUCT_ID,
+    PRODUCT_NAME: item.PRODUCT_NAME,
+    QTY: item.QTY,
+    PRICE: item.PRICE,
+    SUBTOTAL: item.PRICE * item.QTY, // Menghilangkan 'undefined'
+  }));
+
+  const itemTableBody = document.getElementById("itemTableBody");
+  const totalText = document.getElementById("totalText");
+
+  function renderTable() {
+    itemTableBody.innerHTML = "";
+    let totalOrder = 0;
+    cart.forEach((item, index) => {
+      totalOrder += item.SUBTOTAL;
+      itemTableBody.innerHTML += `
+        <tr>
+          <td>${item.PRODUCT_NAME}</td>
+          <td>${item.QTY}</td>
+          <td>Rp ${item.PRICE.toLocaleString()}</td>
+          <td>Rp ${item.SUBTOTAL.toLocaleString()}</td>
+          <td><button onclick="removeItem(${index})" style="color:red; background:none; border:none; cursor:pointer;">Hapus</button></td>
+        </tr>`;
+    });
+    totalText.innerText = `Total: Rp ${totalOrder.toLocaleString("id-ID")}`;
+    return totalOrder;
+  }
+
+  // Jalankan render pertama kali
+  renderTable();
+
+  // Fungsi Tambah Item Baru
+  document.getElementById("addItem").onclick = () => {
+    const prodSelect = document.getElementById("prodId");
+    const selectedProd = prodSelect.options[prodSelect.selectedIndex];
+    const qty = parseInt(document.getElementById("qty").value);
+
+    if (!selectedProd.value) return alert("Pilih produk!");
+
+    const price = parseFloat(selectedProd.getAttribute("data-price"));
+    cart.push({
+      PRODUCT_ID: selectedProd.value,
+      PRODUCT_NAME: selectedProd.text,
+      QTY: qty,
+      PRICE: price,
+      SUBTOTAL: price * qty,
+    });
+    renderTable();
+  };
+
+  window.removeItem = (index) => {
+    cart.splice(index, 1);
+    renderTable();
+  };
+
+  // Fungsi Kirim Update
+  document.getElementById("updateTransaction").onclick = async () => {
+    const payload = {
+      CUST_ID: document.getElementById("custId").value,
+      RECEIPT_NUMBER: document.getElementById("receipt").value,
+      TOTAL: renderTable(),
+      items: cart,
+    };
+
+    try {
+      const res = await fetch(
+        `http://localhost:3000/orders/${orderData.ORDER_ID}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (res.ok) {
+        alert("Transaksi Berhasil Diperbarui!");
+        window.location.href = "/Dashboard/orders";
+      }
+    } catch (e) {
+      alert("Gagal koneksi ke server");
+    }
+  };
+</script>
+
+<style>
+  /* Gunakan Style yang sama dengan halaman Add agar konsisten */
+  .container {
+    padding: 25px;
+  }
+  .card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+  .input-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .input-group input,
+  .input-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+  }
+  .product-selection {
+    display: flex;
+    gap: 12px;
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    align-items: center;
+  }
+  .product-selection select {
+    flex: 3;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  .btn-blue {
+    background: #3b82f6;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .table-items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+  }
+  .table-items th {
+    background: #f1f5f9;
+    padding: 15px;
+    text-align: left;
+  }
+  .table-items td {
+    padding: 15px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .footer-form {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 25px;
+    border-top: 2px dashed #eee;
+  }
+  .total-display {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #1e40af;
+  }
+  .btn-save {
+    background: #3b82f6;
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+</style>

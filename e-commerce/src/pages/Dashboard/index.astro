@@ -1,0 +1,377 @@
+---
+import DashboardLayout from "../../layouts/Dashboard.astro";
+
+// Pastikan Backend berjalan di port 3000 dengan endpoint /api/Query
+const response = await fetch("http://localhost:3000/api/Query");
+const data = await response.json();
+
+// Mapping Nama Bulan untuk Q8, Q9, Q10 (Sesuai alias SQL: Januari, Februari, dst)
+const fullMonths = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
+];
+
+// Mapping Nama Bulan untuk Q6, Q7 (Sesuai alias SQL: Jan, Feb, Mar, Agt, dst)
+const shortMonths = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Agt",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
+];
+---
+
+<DashboardLayout>
+  <div class="p-6 bg-gray-50 min-h-screen">
+    <h1 class="text-2xl font-bold mb-8 text-center uppercase tracking-wider">
+      Laporan Analisis Penjualan Tahun Sebelumnya
+    </h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-blue-500"
+      >
+        <h2 class="font-bold text-sm mb-3 text-blue-700 uppercase">
+          1. Produk Terlaris
+        </h2>
+        <table class="w-full text-xs border">
+          <thead class="bg-gray-100"
+            ><tr
+              ><th class="p-2 border text-left">Nama Produk</th><th
+                class="p-2 border text-center">Total</th
+              ></tr
+            ></thead
+          >
+          <tbody>
+            {
+              data.q1?.map((i) => (
+                <tr class="border-t">
+                  <>
+                    <td class="p-2">{i.nama_produk}</td>
+                    <td class="p-2 text-center font-bold">{i.jumlah} Unit</td>
+                  </>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-blue-500"
+      >
+        <h2 class="font-bold text-sm mb-3 text-blue-700 uppercase">
+          2. Customer Order Terbanyak
+        </h2>
+        <table class="w-full text-xs border">
+          <thead class="bg-gray-100"
+            ><tr
+              ><th class="p-2 border text-left">Nama Customer</th><th
+                class="p-2 border text-center">Jumlah Order</th
+              ></tr
+            ></thead
+          >
+          <tbody>
+            {
+              data.q2?.map((i) => (
+                <tr class="border-t">
+                  <>
+                    <td class="p-2">{i.cust_name}</td>
+                    <td class="p-2 text-center font-bold">{i.jumlah} Kali</td>
+                  </>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-green-500"
+      >
+        <h2 class="font-bold text-sm mb-3 text-green-700 uppercase">
+          3. Customer Nominal Terbesar
+        </h2>
+        <table class="w-full text-xs border">
+          <thead class="bg-gray-100"
+            ><tr
+              ><th class="p-2 border text-left">Nama Pelanggan</th><th
+                class="p-2 border text-right">Nominal</th
+              ></tr
+            ></thead
+          >
+          <tbody>
+            {
+              data.q3?.map((i) => (
+                <tr class="border-t">
+                  <>
+                    <td class="p-2">{i.nama_pelanggan}</td>
+                    <td class="p-2 text-right font-bold text-green-600">
+                      Rp {(i.nominal || 0).toLocaleString("id-ID")}
+                    </td>
+                  </>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-green-500"
+      >
+        <h2 class="font-bold text-sm mb-3 text-green-700 uppercase">
+          4. Customer Total Item Terbanyak
+        </h2>
+        <table class="w-full text-xs border">
+          <thead class="bg-gray-100"
+            ><tr
+              ><th class="p-2 border text-left">Nama Pelanggan</th><th
+                class="p-2 border text-center">Total QTY</th
+              ></tr
+            ></thead
+          >
+          <tbody>
+            {
+              data.q4?.map((i) => (
+                <tr class="border-t">
+                  <>
+                    <td class="p-2">{i.nama_pelanggan}</td>
+                    <td class="p-2 text-center font-bold">
+                      {i.total_item} Unit
+                    </td>
+                  </>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-orange-500"
+      >
+        <h2 class="font-bold text-sm mb-3 text-orange-700 uppercase">
+          5. 10 Produk Terlaris
+        </h2>
+        <table class="w-full text-xs border">
+          <thead class="bg-gray-100"
+            ><tr
+              ><th class="p-2 border text-left">Nama Produk</th><th
+                class="p-2 border text-center">Jumlah</th
+              ></tr
+            ></thead
+          >
+          <tbody>
+            {
+              data.q5?.map((i) => (
+                <tr class="border-t">
+                  <>
+                    <td class="p-2">{i.nama_produk}</td>
+                    <td class="p-2 text-center font-bold">{i.jumlah}</td>
+                  </>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-purple-500 lg:col-span-2 overflow-hidden"
+      >
+        <h2 class="font-bold text-sm mb-3 text-purple-700 uppercase">
+          6. Profit Penjualan Bulanan Per Produk (Rp)
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[10px] border border-collapse">
+            <thead class="bg-gray-100 text-center">
+              <tr>
+                <th class="p-2 border text-left sticky left-0 bg-gray-100"
+                  >Produk</th
+                >
+                {shortMonths.map((m) => <th class="p-2 border">{m}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {
+                data.q6?.map((i) => (
+                  <tr class="border-t hover:bg-gray-50">
+                    <td class="p-2 border font-medium sticky left-0 bg-white shadow-sm">
+                      {i.product_name}
+                    </td>
+                    {shortMonths.map((m) => (
+                      <td class="p-2 border text-right">
+                        {(i[m] || 0).toLocaleString("id-ID")}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-purple-500 lg:col-span-2 overflow-hidden"
+      >
+        <h2 class="font-bold text-sm mb-3 text-purple-700 uppercase">
+          7. Jumlah Unit Terjual Bulanan Per Produk
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[10px] border border-collapse">
+            <thead class="bg-gray-100 text-center">
+              <tr>
+                <th class="p-2 border text-left sticky left-0 bg-gray-100"
+                  >Produk</th
+                >
+                {shortMonths.map((m) => <th class="p-2 border">{m}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {
+                data.q7?.map((i) => (
+                  <tr class="border-t hover:bg-gray-50">
+                    <td class="p-2 border font-medium sticky left-0 bg-white shadow-sm">
+                      {i.product_name}
+                    </td>
+                    {shortMonths.map((m) => (
+                      <td class="p-2 border text-center font-bold">
+                        {i[m] || 0}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-pink-500 lg:col-span-2 overflow-hidden"
+      >
+        <h2 class="font-bold text-sm mb-3 text-pink-700 uppercase">
+          8. Frekuensi Order Bulanan Customer
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[10px] border border-collapse">
+            <thead class="bg-gray-100 text-center">
+              <tr>
+                <th class="p-2 border text-left sticky left-0 bg-gray-100"
+                  >Customer</th
+                >
+                {fullMonths.map((m) => <th class="p-2 border">{m}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {
+                data.q8?.map((i) => (
+                  <tr class="border-t hover:bg-gray-50">
+                    <td class="p-2 border font-medium sticky left-0 bg-white shadow-sm">
+                      {i.cust_name}
+                    </td>
+                    {fullMonths.map((m) => (
+                      <td class="p-2 border text-center">{i[m] || 0}</td>
+                    ))}
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-pink-500 lg:col-span-2 overflow-hidden"
+      >
+        <h2 class="font-bold text-sm mb-3 text-pink-700 uppercase">
+          9. Total Belanja Bulanan Customer (Rp)
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[10px] border border-collapse">
+            <thead class="bg-gray-100 text-center">
+              <tr>
+                <th class="p-2 border text-left sticky left-0 bg-gray-100"
+                  >Customer</th
+                >
+                {fullMonths.map((m) => <th class="p-2 border">{m}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {
+                data.q9?.map((i) => (
+                  <tr class="border-t hover:bg-gray-50">
+                    <td class="p-2 border font-medium sticky left-0 bg-white shadow-sm">
+                      {i.cust_name}
+                    </td>
+                    {fullMonths.map((m) => (
+                      <td class="p-2 border text-right">
+                        {(i[m] || 0).toLocaleString("id-ID")}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section
+        class="bg-white p-4 shadow rounded-lg border-t-4 border-black lg:col-span-2 overflow-hidden"
+      >
+        <h2 class="font-bold text-sm mb-3 text-black uppercase">
+          10. Tampilan jumlah layanan bulanan di tahun sebelumnya untuk setiap
+          kasir
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[10px] border border-collapse">
+            <thead class="bg-gray-100 text-center">
+              <tr>
+                <th class="p-2 border text-left sticky left-0 bg-gray-100"
+                  >Nama Kasir</th
+                >
+                {fullMonths.map((m) => <th class="p-2 border">{m}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {
+                data.q10?.map((i) => (
+                  <tr class="border-t hover:bg-gray-50">
+                    <td class="p-2 border font-medium sticky left-0 bg-white shadow-sm">
+                      {i.USERNAME}
+                    </td>
+                    {fullMonths.map((m) => (
+                      <td class="p-2 border text-center text-blue-600 font-bold">
+                        {i[m] || 0}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</DashboardLayout>

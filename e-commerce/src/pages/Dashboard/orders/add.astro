@@ -1,0 +1,283 @@
+---
+import Dashboard from "../../../layouts/Dashboard.astro";
+const customers = await fetch("http://localhost:3000/customers").then((res) =>
+  res.json()
+);
+const products = await fetch("http://localhost:3000/product").then((res) =>
+  res.json()
+);
+---
+
+<Dashboard>
+  <div class="container">
+    <h2 class="page-title">Tambah Transaksi Baru</h2>
+    <div class="card">
+      <div class="form-grid">
+        <div class="input-group">
+          <label for="orderId">ID Order</label>
+          <input type="number" id="orderId" placeholder="Contoh: 12345" />
+        </div>
+        <div class="input-group">
+          <label for="custId">Pelanggan</label>
+          <select id="custId">
+            <option value="">-- Pilih Pelanggan --</option>
+            {
+              customers.map((c: any) => (
+                <option value={c.CUST_ID}>{c.CUST_NAME}</option>
+              ))
+            }
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="receipt">No. Resi</label>
+          <input type="text" id="receipt" placeholder="Nomor Referensi" />
+        </div>
+      </div>
+
+      <div class="product-selection">
+        <select id="prodId">
+          <option value="">-- Pilih Produk --</option>
+          {
+            products.map((p: any) => (
+              <option value={p.PRODUCT_ID} data-price={p.PRICE}>
+                {p.PRODUCT_NAME}
+              </option>
+            ))
+          }
+        </select>
+        <input type="number" id="qty" value="1" min="1" />
+        <button id="addItem" class="btn-blue">Tambah Item</button>
+      </div>
+
+      <table class="table-items">
+        <thead>
+          <tr>
+            <th>PRODUK</th>
+            <th style="width: 10%">QTY</th>
+            <th style="width: 20%">HARGA</th>
+            <th style="width: 20%">SUBTOTAL</th>
+            <th style="width: 10%">AKSI</th>
+          </tr>
+        </thead>
+        <tbody id="itemTableBody"></tbody>
+      </table>
+
+      <div class="footer-form">
+        <div class="total-display" id="totalText">Total: Rp 0</div>
+        <button id="saveTransaction" class="btn-save">SIMPAN TRANSAKSI</button>
+      </div>
+    </div>
+  </div>
+</Dashboard>
+
+<script is:inline>
+  let cart = [];
+  let totalOrder = 0;
+
+  const itemTableBody = document.getElementById("itemTableBody");
+  const totalText = document.getElementById("totalText");
+
+  // Fungsi Tambah Item Baru (Versi Anti-Duplikat)
+  document.getElementById("addItem").onclick = () => {
+    const prodSelect = document.getElementById("prodId");
+    const selectedProd = prodSelect.options[prodSelect.selectedIndex];
+    const qtyInput = document.getElementById("qty");
+    const qty = parseInt(qtyInput.value);
+
+    if (!selectedProd.value) return alert("Pilih produk!");
+
+    const productId = selectedProd.value;
+    const price = parseFloat(selectedProd.getAttribute("data-price"));
+
+    // CARI: Apakah produk ini sudah ada di tabel?
+    const existingItem = cart.find((item) => item.PRODUCT_ID === productId);
+
+    if (existingItem) {
+      // Jika ada, tambahkan Qty nya saja
+      existingItem.QTY += qty;
+      existingItem.SUBTOTAL = existingItem.QTY * existingItem.PRICE;
+    } else {
+      // Jika belum ada, masukkan sebagai baris baru
+      cart.push({
+        PRODUCT_ID: productId,
+        PRODUCT_NAME: selectedProd.text,
+        QTY: qty,
+        PRICE: price,
+        SUBTOTAL: price * qty,
+      });
+    }
+
+    renderTable();
+    qtyInput.value = 1; // Reset input qty
+  };
+
+  function renderTable() {
+    itemTableBody.innerHTML = "";
+    totalOrder = 0;
+    cart.forEach((item, index) => {
+      totalOrder += item.SUBTOTAL;
+      itemTableBody.innerHTML += `
+        <tr>
+          <td>${item.PRODUCT_NAME}</td>
+          <td style="text-align:center">${item.QTY}</td>
+          <td>Rp ${item.PRICE.toLocaleString()}</td>
+          <td>Rp ${item.SUBTOTAL.toLocaleString()}</td>
+          <td><button onclick="removeItem(${index})" style="color:red; cursor:pointer; background:none; border:none;">Hapus</button></td>
+        </tr>`;
+    });
+    totalText.innerText = `Total: Rp ${totalOrder.toLocaleString("id-ID")}`;
+  }
+
+  window.removeItem = (index) => {
+    cart.splice(index, 1);
+    renderTable();
+  };
+
+  document.getElementById("saveTransaction").onclick = async () => {
+    const orderId = document.getElementById("orderId").value;
+    const custId = document.getElementById("custId").value;
+
+    if (!orderId || !custId || cart.length === 0)
+      return alert("Lengkapi data!");
+
+    // Mencegah Out of Range
+    if (orderId.length > 9)
+      return alert("ID Order terlalu panjang (Maks 9 digit)!");
+
+    const payload = {
+      ORDER_ID: orderId,
+      CUST_ID: custId,
+      USER_ID: "24090138",
+      TOTAL: totalOrder,
+      METHOD_ID: 1,
+      RECEIPT_NUMBER: document.getElementById("receipt").value,
+      items: cart,
+    };
+
+    try {
+      const res = await fetch("http://localhost:3000/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+        alert("Berhasil!");
+        window.location.href = "/Dashboard/orders";
+      } else {
+        alert("Gagal: " + (result.error?.sqlMessage || result.message));
+      }
+    } catch (e) {
+      alert("Koneksi gagal!");
+    }
+  };
+</script>
+
+<style>
+  .container {
+    padding: 25px;
+  }
+  .card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Horizontal Grid */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+  .input-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #475569;
+  }
+  .input-group input,
+  .input-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+  }
+
+  .product-selection {
+    display: flex;
+    gap: 12px;
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    align-items: center;
+  }
+  .product-selection select {
+    flex: 3;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+  }
+  .product-selection input {
+    flex: 0.5;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    text-align: center;
+  }
+
+  .btn-blue {
+    background: #3b82f6;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .table-items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    margin-bottom: 30px;
+  }
+  .table-items th {
+    background: #f1f5f9;
+    padding: 15px;
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+    font-size: 0.85rem;
+    color: #475569;
+  }
+  .table-items td {
+    padding: 15px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .footer-form {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px dashed #e2e8f0;
+    padding-top: 25px;
+  }
+  .total-display {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #1e40af;
+  }
+  .btn-save {
+    background: #22c55e;
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+</style>
